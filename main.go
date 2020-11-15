@@ -24,8 +24,9 @@ func concatRateArea(state string, code string) string {
 	return rateArea
 }
 
-func parseSlcsp() (map[string]*RateData, error) {
-	zips := make(map[string]*RateData)
+// parseSlcsp reads the data in SlcspFileName and returns all of the zip codes from it
+func parseSlcsp() ([]string, error) {
+	zips := make([]string, 0)
 	slcspFile, err := os.Open(SlcspFileName)
 	if err != nil {
 		return zips, err
@@ -57,7 +58,8 @@ func parseSlcsp() (map[string]*RateData, error) {
 		// Record fields:
 		// 0 - zipcode
 		// 1 - rate
-		zips[record[0]] = &RateData{}
+		// Only store the zipcode field since rate will be empty here
+		zips = append(zips, record[0])
 	}
 
 	return zips, err
@@ -167,27 +169,33 @@ func main() {
 		log.Fatal("Error parsing data from "+SlcspFileName, err)
 	}
 
-	// Read zips.csv
-	zips, err = parseZips(zips)
+	// Create map from slice returned by parseSlcsp
+	zipData := make(map[string]*RateData)
+	for _, zip := range zips {
+		zipData[zip] = &RateData{}
+	}
+
+	// Read ZipsFileName
+	zipData, err = parseZips(zipData)
 	if err != nil {
 		log.Fatal("Error parsing data from "+ZipsFileName, err)
 	}
 
-	// Read plans.csv
-	zips, err = parsePlans(zips)
+	// Read PlansFileName
+	zipData, err = parsePlans(zipData)
 	if err != nil {
 		log.Fatal("Error parsing data from "+PlansFileName, err)
 	}
 
 	// Output
 	fmt.Println("zipcode,rate")
-	for zip, rateData := range zips {
+	for _, zip := range zips {
+		rateData := zipData[zip]
 		// If no second lowest rate, just output zip
 		if len(rateData.Rates) < 2 {
 			fmt.Println(zip + ",")
 		} else {
-			// Get second lowest rate
-			sort.Float64s(rateData.Rates)
+			sort.Float64s(rateData.Rates) // sort least to greatest
 			fmt.Println(fmt.Sprintf("%s,%.2f", zip, rateData.Rates[1]))
 		}
 	}
