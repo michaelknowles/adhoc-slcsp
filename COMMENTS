@@ -4,6 +4,6 @@ The code is written in Go. It can be run in two different ways.
 
 1. Compile to binary and run
   - `go build`
-  - `./slcsp`
+  - `slcsp` or `./slcsp`
 2. Run using Go
   - `go run main.go`
