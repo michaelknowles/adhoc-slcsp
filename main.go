@@ -18,15 +18,17 @@ const PlansFileName string = "plans.csv"
 // RateData holds the rating information for a zip code
 // RateArea is a string where `state` and `rate_area` are concatenated from ZipsFileName/PlansFileName
 // Rates is a slice of applicable rates found for the RateArea from PlansFileName
+// Ambiguous marks whether a zip has multiple RateArea
 type RateData struct {
-	RateArea string
-	Rates    []float64
+	RateArea  string
+	Rates     []float64
+	Ambiguous bool
 }
 
 // concatRateArea creates the RateArea string for use in RateData
 // It expects the `state` and the `rate_area` from ZipsFileName/PlansFileName
 func concatRateArea(state string, code string) string {
-	rateArea := fmt.Sprintf("%s %s", state, code)
+	rateArea := fmt.Sprintf("%s%s", state, code)
 	return rateArea
 }
 
@@ -109,9 +111,14 @@ func parseZips(zips map[string]*RateData) (map[string]*RateData, error) {
 		// 4 - rate_area
 		zip := record[0]
 		// Store the rate area if the record's zipcode matches one in zips
+		// If the rate area is already set and differs from the current record's mark the data as ambiguous
 		if _, exists := zips[zip]; exists {
 			rateArea := concatRateArea(record[1], record[4])
-			zips[zip].RateArea = rateArea
+			if zips[zip].RateArea == "" {
+				zips[zip].RateArea = rateArea
+			} else if zips[zip].RateArea != rateArea {
+				zips[zip].Ambiguous = true
+			}
 		}
 	}
 
@@ -162,12 +169,12 @@ func parsePlans(zips map[string]*RateData) (map[string]*RateData, error) {
 
 		// Loop through each stored rate area
 		// Store the rate if the record's rate area matches and it's a Silver plan
+		// Skip the zip's rate area if it's been marked as ambiguous
 		for _, rateData := range zips {
-			if rateArea == rateData.RateArea && record[2] == "Silver" {
+			if rateArea == rateData.RateArea && !rateData.Ambiguous && record[2] == "Silver" {
 				rateData.Rates = append(rateData.Rates, rate)
 			}
 		}
-
 	}
 
 	return zips, err
