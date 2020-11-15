@@ -10,15 +10,21 @@ import (
 	"strconv"
 )
 
+// File names
 const SlcspFileName string = "slcsp.csv"
 const ZipsFileName string = "zips.csv"
 const PlansFileName string = "plans.csv"
 
+// RateData holds the rating information for a zip code
+// RateArea is a string where `state` and `rate_area` are concatenated from ZipsFileName/PlansFileName
+// Rates is a slice of applicable rates found for the RateArea from PlansFileName
 type RateData struct {
 	RateArea string
 	Rates    []float64
 }
 
+// concatRateArea creates the RateArea string for use in RateData
+// It expects the `state` and the `rate_area` from ZipsFileName/PlansFileName
 func concatRateArea(state string, code string) string {
 	rateArea := fmt.Sprintf("%s %s", state, code)
 	return rateArea
@@ -36,7 +42,7 @@ func parseSlcsp() ([]string, error) {
 	slcspReader := csv.NewReader(slcspFile)
 	slcspReader.FieldsPerRecord = 2
 
-	// Skip first line
+	// Skip first line (header)
 	_, err = slcspReader.Read()
 	if err != nil {
 		return zips, err
@@ -65,6 +71,7 @@ func parseSlcsp() ([]string, error) {
 	return zips, err
 }
 
+// parseZips reads the data from ZipsFileName and adds RateArea info to the zip
 func parseZips(zips map[string]*RateData) (map[string]*RateData, error) {
 	zipsFile, err := os.Open(ZipsFileName)
 	if err != nil {
@@ -75,7 +82,7 @@ func parseZips(zips map[string]*RateData) (map[string]*RateData, error) {
 	zipsReader := csv.NewReader(zipsFile)
 	zipsReader.FieldsPerRecord = 5
 
-	// Skip first line
+	// Skip first line (header)
 	_, err = zipsReader.Read()
 	if err != nil {
 		return zips, err
@@ -101,6 +108,7 @@ func parseZips(zips map[string]*RateData) (map[string]*RateData, error) {
 		// 3 - name
 		// 4 - rate_area
 		zip := record[0]
+		// Store the rate area if the record's zipcode matches one in zips
 		if _, exists := zips[zip]; exists {
 			rateArea := concatRateArea(record[1], record[4])
 			zips[zip].RateArea = rateArea
@@ -110,6 +118,7 @@ func parseZips(zips map[string]*RateData) (map[string]*RateData, error) {
 	return zips, err
 }
 
+// parsePlans reads the data from PlansFileName and adds Rates to the zip/RateArea
 func parsePlans(zips map[string]*RateData) (map[string]*RateData, error) {
 	plansFile, err := os.Open(PlansFileName)
 	if err != nil {
@@ -120,7 +129,7 @@ func parsePlans(zips map[string]*RateData) (map[string]*RateData, error) {
 	plansReader := csv.NewReader(plansFile)
 	plansReader.FieldsPerRecord = 5
 
-	// Skip first line
+	// Skip first line (header)
 	_, err = plansReader.Read()
 	if err != nil {
 		return zips, err
@@ -151,6 +160,8 @@ func parsePlans(zips map[string]*RateData) (map[string]*RateData, error) {
 			return zips, err
 		}
 
+		// Loop through each stored rate area
+		// Store the rate if the record's rate area matches and it's a Silver plan
 		for _, rateData := range zips {
 			if rateArea == rateData.RateArea && record[2] == "Silver" {
 				rateData.Rates = append(rateData.Rates, rate)
@@ -163,7 +174,7 @@ func parsePlans(zips map[string]*RateData) (map[string]*RateData, error) {
 }
 
 func main() {
-	// Read slcsp.csv
+	// Read SlcspFileName
 	zips, err := parseSlcsp()
 	if err != nil {
 		log.Fatal("Error parsing data from "+SlcspFileName, err)
