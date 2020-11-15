@@ -111,7 +111,7 @@ func parseZips(zips map[string]*RateData) (map[string]*RateData, error) {
 		// 4 - rate_area
 		zip := record[0]
 		// Store the rate area if the record's zipcode matches one in zips
-		// If the rate area is already set and differs from the current record's mark the data as ambiguous
+		// If the rate area is already set and differs from the current record's, mark the data as ambiguous
 		if _, exists := zips[zip]; exists {
 			rateArea := concatRateArea(record[1], record[4])
 			if zips[zip].RateArea == "" {
@@ -125,7 +125,7 @@ func parseZips(zips map[string]*RateData) (map[string]*RateData, error) {
 	return zips, err
 }
 
-// parsePlans reads the data from PlansFileName and adds Rates to the zip/RateArea
+// parsePlans reads the data from PlansFileName and adds Rates to the zip/RateArea struct
 func parsePlans(zips map[string]*RateData) (map[string]*RateData, error) {
 	plansFile, err := os.Open(PlansFileName)
 	if err != nil {
@@ -181,7 +181,7 @@ func parsePlans(zips map[string]*RateData) (map[string]*RateData, error) {
 }
 
 func main() {
-	// Read SlcspFileName
+	// Read SlcspFileName to get zip codes to be checked
 	zips, err := parseSlcsp()
 	if err != nil {
 		log.Fatal("Error parsing data from "+SlcspFileName, err)
@@ -193,13 +193,13 @@ func main() {
 		zipData[zip] = &RateData{}
 	}
 
-	// Read ZipsFileName
+	// Read ZipsFileName to get zip to rate area mappings
 	zipData, err = parseZips(zipData)
 	if err != nil {
 		log.Fatal("Error parsing data from "+ZipsFileName, err)
 	}
 
-	// Read PlansFileName
+	// Read PlansFileName to get rates for each rate area
 	zipData, err = parsePlans(zipData)
 	if err != nil {
 		log.Fatal("Error parsing data from "+PlansFileName, err)
@@ -214,7 +214,7 @@ func main() {
 			fmt.Println(zip + ",")
 		} else {
 			sort.Float64s(rateData.Rates) // sort least to greatest
-			fmt.Println(fmt.Sprintf("%s,%.2f", zip, rateData.Rates[1]))
+			fmt.Printf("%s,%.2f\n", zip, rateData.Rates[1])
 		}
 	}
 }
