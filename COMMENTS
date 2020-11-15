@@ -1,0 +1,9 @@
+This code assumes that the input files (slcsp.csv, plans.csv, zips.csv) are accessible and in the current directory.
+
+The code is written in Go. It can be run in two different ways.
+
+1. Compile to binary and run
+  - `go build`
+  - `./slcsp`
+2. Run using Go
+  - `go run main.go`
